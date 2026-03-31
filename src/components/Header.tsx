@@ -1,15 +1,14 @@
-import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Waves, Menu, X } from "lucide-react";
+import { Waves, Menu, X, Loader2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useState } from "react";
+import { useWallet } from "@/hooks/useWallet";
 
 const Header = () => {
   const location = useLocation();
-  const [connected, setConnected] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
-
-  const walletAddress = "0x7a3B...f29E";
+  const { address, isConnected, connecting, connect } = useWallet();
 
   const navLinks = [
     { to: "/", label: "Home" },
@@ -19,6 +18,10 @@ const Header = () => {
   ];
 
   const isActive = (path: string) => location.pathname === path;
+
+  const truncatedAddress = address
+    ? `${address.slice(0, 6)}...${address.slice(-4)}`
+    : "";
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 glass">
@@ -50,14 +53,21 @@ const Header = () => {
         </nav>
 
         <div className="hidden md:flex items-center gap-3">
-          {connected ? (
+          {isConnected ? (
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-surface-2 border border-border">
               <div className="w-2 h-2 rounded-full bg-status-approved animate-pulse-glow" />
-              <span className="text-sm font-mono text-muted-foreground">{walletAddress}</span>
+              <span className="text-sm font-mono text-muted-foreground">{truncatedAddress}</span>
             </div>
           ) : (
-            <Button variant="wallet" size="sm" onClick={() => setConnected(true)}>
-              Connect Wallet
+            <Button variant="wallet" size="sm" onClick={connect} disabled={connecting}>
+              {connecting ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Connecting...
+                </>
+              ) : (
+                "Connect Wallet"
+              )}
             </Button>
           )}
         </div>
@@ -96,14 +106,14 @@ const Header = () => {
                 </Link>
               ))}
               <div className="pt-2">
-                {connected ? (
+                {isConnected ? (
                   <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-surface-2">
                     <div className="w-2 h-2 rounded-full bg-status-approved" />
-                    <span className="text-sm font-mono text-muted-foreground">{walletAddress}</span>
+                    <span className="text-sm font-mono text-muted-foreground">{truncatedAddress}</span>
                   </div>
                 ) : (
-                  <Button variant="wallet" className="w-full" onClick={() => setConnected(true)}>
-                    Connect Wallet
+                  <Button variant="wallet" className="w-full" onClick={connect} disabled={connecting}>
+                    {connecting ? "Connecting..." : "Connect Wallet"}
                   </Button>
                 )}
               </div>

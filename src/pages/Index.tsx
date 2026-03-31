@@ -11,21 +11,18 @@ const roles = [
     title: "Fisherman",
     desc: "Log catches on-chain with GPS, species, and weight — immutable and instant.",
     to: "/fisherman",
-    color: "primary",
   },
   {
     icon: Shield,
     title: "Regulator",
-    desc: "Review, approve, or reject catches. Full oversight dashboard with real-time data.",
+    desc: "Review and approve catches. Full oversight dashboard with on-chain finality.",
     to: "/regulator",
-    color: "accent",
   },
   {
     icon: Search,
     title: "Consumer",
-    desc: "Trace any catch from ocean to plate. Verify origin, authority, and sustainability.",
+    desc: "Trace any catch by ID. Verify origin, authority, and sustainability on-chain.",
     to: "/trace",
-    color: "primary",
   },
 ];
 
@@ -42,14 +39,12 @@ const item = {
 const Index = () => (
   <div className="min-h-screen relative">
     <WaveBackground />
-    {/* Hero background image */}
     <div className="absolute inset-0 z-0">
       <img src={heroOcean} alt="" className="w-full h-full object-cover opacity-20" width={1920} height={800} />
       <div className="absolute inset-0 bg-gradient-to-b from-background/60 via-background/80 to-background" />
     </div>
 
     <div className="relative z-10 container mx-auto px-4 pt-32 pb-20">
-      {/* Hero */}
       <motion.div
         initial={{ opacity: 0, y: 40 }}
         animate={{ opacity: 1, y: 0 }}
@@ -69,7 +64,7 @@ const Index = () => (
         </h1>
 
         <p className="text-lg text-muted-foreground max-w-xl mx-auto mb-10 leading-relaxed">
-          An immutable digital logbook for commercial fishing. Combat illegal fishing, 
+          An immutable digital logbook for commercial fishing. Combat illegal fishing,
           ensure traceability, and build trust — from ocean to plate.
         </p>
 
@@ -85,7 +80,6 @@ const Index = () => (
         </div>
       </motion.div>
 
-      {/* Role Cards */}
       <motion.div
         variants={container}
         initial="hidden"
@@ -109,26 +103,6 @@ const Index = () => (
               </p>
             </Link>
           </motion.div>
-        ))}
-      </motion.div>
-
-      {/* Stats */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.8 }}
-        className="mt-20 grid grid-cols-2 md:grid-cols-4 gap-6 max-w-3xl mx-auto"
-      >
-        {[
-          { val: "1,247", label: "Catches Logged" },
-          { val: "98.2%", label: "Approval Rate" },
-          { val: "342", label: "Active Fishermen" },
-          { val: "12", label: "Regulatory Bodies" },
-        ].map((stat) => (
-          <div key={stat.label} className="text-center">
-            <div className="font-heading text-2xl font-bold text-foreground">{stat.val}</div>
-            <div className="text-xs text-muted-foreground mt-1">{stat.label}</div>
-          </div>
         ))}
       </motion.div>
     </div>
