@@ -42,6 +42,11 @@ const item = {
 const Index = () => (
   <div className="min-h-screen relative">
     <WaveBackground />
+    {/* Hero background image */}
+    <div className="absolute inset-0 z-0">
+      <img src={heroOcean} alt="" className="w-full h-full object-cover opacity-20" width={1920} height={800} />
+      <div className="absolute inset-0 bg-gradient-to-b from-background/60 via-background/80 to-background" />
+    </div>
 
     <div className="relative z-10 container mx-auto px-4 pt-32 pb-20">
       {/* Hero */}
