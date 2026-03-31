@@ -15,6 +15,10 @@ const buttonVariants = cva(
         secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/80",
         ghost: "hover:bg-accent hover:text-accent-foreground",
         link: "text-primary underline-offset-4 hover:underline",
+        wallet: "bg-primary text-primary-foreground hover:bg-primary/90 glow-primary font-heading font-semibold tracking-wide",
+        approve: "bg-status-approved text-status-approved-fg hover:bg-status-approved/90 font-heading font-semibold",
+        reject: "bg-status-rejected text-status-rejected-fg hover:bg-status-rejected/90 font-heading font-semibold",
+        hero: "bg-primary text-primary-foreground hover:bg-primary/80 glow-primary font-heading font-bold tracking-wide text-base",
       },
       size: {
         default: "h-10 px-4 py-2",
