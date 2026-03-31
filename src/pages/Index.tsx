@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import WaveBackground from "@/components/WaveBackground";
+import heroOcean from "@/assets/hero-ocean.jpg";
 import { Anchor, Shield, Search, ArrowRight } from "lucide-react";
 
 const roles = [
