@@ -1,167 +1,371 @@
 # Ocean Ledger: Blockchain-Powered Freelance Escrow & Mandate System
 
-Ocean Ledger is a decentralized freelancing + escrow platform designed to bring absolute trust, transparent workflows, and dispute protection to both Buyers and Sellers. Built on a hybrid architecture combining a local Ethereum smart contract runtime (Hardhat) and Next.js 14, it ensures that freelance agreements are strictly governed by transparent, self-executing code.
+Ocean Ledger is a decentralized freelancing and escrow platform built to bring trust, transparent workflows, and dispute protection to Buyers and Sellers. Built using Ethereum smart contracts, Hardhat, Prisma, and Next.js 14, the platform ensures freelance agreements are governed by transparent, self-executing blockchain logic.
 
 ---
 
 ## 🌟 Key Features
 
 ### 🛡️ Smart Contract Escrow Lock
-All financial agreements are handled directly on-chain by `FreelanceEscrow.sol`. Funds are never held by a central server; instead, they are held in a secure, reentrancy-guarded escrow contract and only released upon successful completion or official dispute resolution.
+All financial agreements are managed directly on-chain by `FreelanceEscrow.sol`. Funds remain locked securely in escrow and are only released upon project completion or dispute resolution.
 
 ### 💼 Dual-Role Dashboards
-*   **Buyer Dashboard (`/buyer`):** Initialize project mandates, define requirements, assign a seller, deposit the project budget directly into the escrow smart contract, and review/approve submitted deliverables.
-*   **Seller Dashboard (`/seller`):** Connect a Web3 wallet, view all assigned project agreements, accept terms, and commit work evidence (e.g., GitHub PRs, IPFS links) directly to the blockchain.
+
+#### Buyer Dashboard (`/buyer`)
+- Create project mandates
+- Assign sellers
+- Deposit ETH into escrow
+- Review and approve deliverables
+
+#### Seller Dashboard (`/seller`)
+- Connect MetaMask wallet
+- View assigned projects
+- Submit work proof (GitHub/IPFS links)
 
 ### ⛓️ Real-Time Blockchain Transparency
-*   Features a floating **On-Chain Transparency Panel** powered by reactive Web3 hooks (`wagmi` / `viem`).
-*   Displays the active local Hardhat block height and live mining confirmations directly on the frontend UI to help users visualize on-chain operations.
+- Live Hardhat blockchain monitoring
+- Real-time block confirmations
+- Wallet-connected frontend using Wagmi & Viem
 
-### 🗃️ Hybrid Performance
-*   **On-Chain (Hardhat):** Acts as the single source of truth for payments, roles, state changes, and agreement milestones.
-*   **Off-Chain (SQLite & Prisma):** Indexes project profiles, descriptions, and historical details for instantaneous search and ultra-fast UI rendering.
+### 🗃️ Hybrid Architecture
+#### On-Chain
+- Escrow handling
+- ETH transfers
+- State transitions
+- Dispute tracking
+
+#### Off-Chain
+- Project metadata storage
+- Fast indexing using Prisma + SQLite
+- Faster frontend rendering
 
 ---
 
-## 🏗️ Project Structure
+# 🏗️ Project Structure
 
 ```text
 ocean-ledger/
-├── contracts/                  # Solidity Smart Contracts
-│   └── FreelanceEscrow.sol     # Core Escrow state machine & payment locking logic
-├── scripts/                    # Hardhat Deployment Scripts
-│   └── deploy.js               # Compiles, deploys contract, and exports address/ABI
-├── test/                       # Smart Contract Test Suite
-│   └── FreelanceEscrow.js      # Mocha/Chai unit tests for core state transitions
-├── prisma/                     # Database Schema & Migrations
-│   ├── schema.prisma           # Prisma setup pointing to local SQLite
-│   └── dev.db                  # Local SQLite database
+├── contracts/
+│   └── FreelanceEscrow.sol
+
+├── scripts/
+│   └── deploy.js
+
+├── test/
+│   └── FreelanceEscrow.js
+
+├── prisma/
+│   ├── schema.prisma
+│   └── dev.db
+
 ├── src/
-│   ├── app/                    # Next.js 14 App Router Page Components
-│   │   ├── api/projects/       # API endpoint for off-chain project indexing
-│   │   ├── buyer/              # Buyer dashboard UI
-│   │   ├── seller/             # Seller dashboard UI
-│   │   ├── globals.css         # Main Tailwind styling
-│   │   ├── layout.tsx          # Root Layout wrapping providers & Transparency Panel
-│   │   └── page.tsx            # Main Landing / navigation interface
-│   ├── components/             # Reusable UI Components
-│   │   ├── ui/                 # Shadcn/ui core design system components
-│   │   ├── Providers.tsx       # Wagmi, Viem, and React Query client providers
-│   │   ├── WalletConnect.tsx   # MetaMask connection handler
-│   │   └── TransparencyPanel.tsx # Reactive on-chain live block height component
+│   ├── app/
+│   │   ├── api/projects/
+│   │   ├── buyer/
+│   │   ├── seller/
+│   │   ├── globals.css
+│   │   ├── layout.tsx
+│   │   └── page.tsx
+│   │
+│   ├── components/
+│   │   ├── ui/
+│   │   ├── Providers.tsx
+│   │   ├── WalletConnect.tsx
+│   │   └── TransparencyPanel.tsx
+│   │
 │   └── lib/
-│       ├── utils.ts            # Class merges and styling utilities
-│       └── contractData.json   # Autogenerated smart contract ABI and localhost address
-├── tailwind.config.ts          # Advanced UI theme tokens
-├── hardhat.config.ts           # Hardhat development network settings
-├── tsconfig.json               # Next.js-aligned TypeScript compiler config
-└── package.json                # Project dependencies and workspace scripts
+│       ├── utils.ts
+│       └── contractData.json
+
+├── hardhat.config.ts
+├── tailwind.config.ts
+├── tsconfig.json
+└── package.json
 ```
 
 ---
 
-## 🏁 How the Project Works (User Flow)
+# 🏁 How the Project Works
 
 ```mermaid
 sequenceDiagram
     autonumber
+
     actor Buyer
     participant EscrowContract as On-Chain Escrow
-    participant DB as SQLite DB
+    participant DB as SQLite Database
     actor Seller
 
-    Buyer->>DB: 1. Create Project Mandate & Assign Seller
-    Buyer->>EscrowContract: 2. Deposit budget in ETH (Locks Escrow)
-    Note over EscrowContract: State changes to: Active
-    Seller->>DB: 3. View assigned project
-    Seller->>EscrowContract: 4. Submit deliverables (GitHub/IPFS link)
-    Note over EscrowContract: State changes to: InReview
+    Buyer->>DB: Create Project Mandate & Assign Seller
+    Buyer->>EscrowContract: Deposit ETH into Escrow
+    Note over EscrowContract: State changes to Active
+
+    Seller->>DB: View Assigned Project
+    Seller->>EscrowContract: Submit Deliverables (GitHub/IPFS)
+    Note over EscrowContract: State changes to InReview
+
     alt Buyer Approves Work
-        Buyer->>EscrowContract: 5a. Release Escrow
-        EscrowContract->>Seller: 6a. Pay budget directly to Seller Address
-        Note over EscrowContract: State changes to: Completed
-    alt Buyer Rejects or Disputes Work
-        Buyer->>EscrowContract: 5b. Initiate Dispute / Request Refund
-        Note over EscrowContract: State changes to: Disputed
-        Note over EscrowContract: Mandate/Admin Resolves Dispute
+        Buyer->>EscrowContract: Release Escrow
+        EscrowContract->>Seller: Transfer ETH to Seller
+        Note over EscrowContract: State changes to Completed
+
+    else Buyer Rejects or Disputes Work
+        Buyer->>EscrowContract: Raise Dispute / Refund Request
+        Note over EscrowContract: State changes to Disputed
+        Note over EscrowContract: Admin Resolves Dispute
     end
 ```
 
 ---
 
-## 🚀 Setup & Execution Guide
+# 🚀 Setup & Execution Guide
 
-Follow these steps to spin up the entire ecosystem on your local machine.
+## 1. Install Required Software
 
-### Prerequisites
-*   [Node.js](https://nodejs.org/) (v18.x or later)
-*   [MetaMask Extension](https://metamask.io/) installed in your browser
+Install:
+
+- Node.js (v18 or newer)
+- MetaMask browser extension
 
 ---
 
-### Step 1: Install Dependencies
-Clone the repository, navigate to the root directory, and install all backend and frontend packages:
+## 2. Open the Project Folder
+
+```bash
+cd ocean-ledger
+```
+
+---
+
+## 3. Install Dependencies
+
 ```bash
 npm install
 ```
 
+This installs:
+
+- Next.js
+- Hardhat
+- Prisma
+- Wagmi
+- Tailwind CSS
+- Solidity dependencies
+- Other required packages
+
 ---
 
-### Step 2: Initialize the Database (Prisma)
-Run the Prisma DB engine to initialize your local SQLite database and automatically generate the client bindings:
+## 4. Setup Prisma SQLite Database
+
 ```bash
 npx prisma db push
 ```
 
+This:
+
+- creates the SQLite database
+- syncs Prisma schema
+- generates Prisma client
+
 ---
 
-### Step 3: Run the Local Ethereum Network
-Spin up a local Hardhat node in a separate terminal. This runs an EVM-compatible node locally on port `8545` and prints 20 pre-funded testing accounts with their private keys:
+## 5. Start Hardhat Blockchain
+
+Open a NEW terminal and run:
+
 ```bash
 npx hardhat node
 ```
-> [!IMPORTANT]  
-> Keep this terminal open! You will need these private keys to import into MetaMask for simulating the Buyer and Seller interactions.
+
+You will see:
+
+- Local blockchain running at:
+  `http://127.0.0.1:8545`
+- 20 test Ethereum accounts
+- Their private keys
+
+⚠️ Keep this terminal OPEN.
 
 ---
 
-### Step 4: Deploy the Escrow Smart Contract
-In a new terminal window, run the deployment script to compile the Solidity code, deploy it to your local node, and write the deployed address & ABI details directly to your frontend source folder (`src/lib/contractData.json`):
+## 6. Deploy Smart Contract
+
+Open another terminal and run:
+
+```bash
+npx hardhat run scripts/deploy.js --network localhost
+```
+
+This:
+
+- compiles the Solidity contract
+- deploys the escrow smart contract
+- generates:
+  `src/lib/contractData.json`
+
+---
+
+## 7. Configure MetaMask
+
+Open MetaMask.
+
+### Add Hardhat Local Network
+
+| Field | Value |
+|---|---|
+| Network Name | Hardhat Localhost |
+| RPC URL | http://127.0.0.1:8545 |
+| Chain ID | 31337 |
+| Currency Symbol | ETH |
+
+Save the network.
+
+---
+
+## 8. Import Test Accounts
+
+From the Hardhat terminal:
+
+### Import:
+- Account #0 → Buyer
+- Account #1 → Seller
+
+Use:
+- MetaMask → Account → Import Account
+
+Paste the private keys shown in the Hardhat terminal.
+
+---
+
+## 9. Start Frontend
+
+Open another terminal:
+
+```bash
+npm run dev
+```
+
+Open:
+
+```text
+http://localhost:3000
+```
+
+---
+
+# 💻 Using the Application
+
+## Buyer Side
+- Connect MetaMask wallet
+- Create project mandate
+- Deposit ETH into escrow
+- Review seller submissions
+- Approve or dispute work
+
+## Seller Side
+- Connect seller wallet
+- View assigned projects
+- Submit deliverables
+- Receive escrow payment
+
+---
+
+# ⚖️ Escrow Workflow
+
+- Buyer deposits ETH into escrow
+- Seller submits deliverables
+- Buyer approves:
+  - ETH released automatically
+- Buyer disputes:
+  - Contract enters dispute state
+
+---
+
+# 🧪 Run Smart Contract Tests
+
+```bash
+npx hardhat test
+```
+
+---
+
+# 📌 Recommended Terminal Setup
+
+## Terminal 1
+```bash
+npx hardhat node
+```
+
+## Terminal 2
+```bash
+npx hardhat run scripts/deploy.js --network localhost
+```
+
+## Terminal 3
+```bash
+npm run dev
+```
+
+---
+
+# 🔄 Full Startup Order
+
+Always run in this order:
+
+```text
+1. npm install
+2. npx prisma db push
+3. npx hardhat node
+4. npx hardhat run scripts/deploy.js --network localhost
+5. npm run dev
+```
+
+---
+
+# ❗ Common Errors & Fixes
+
+## “Port 8545 already in use”
+Close old Hardhat terminals/processes.
+
+---
+
+## “contractData.json missing”
+
+Run deployment again:
+
 ```bash
 npx hardhat run scripts/deploy.js --network localhost
 ```
 
 ---
 
-### Step 5: Configure MetaMask
-Open your MetaMask extension and configure a custom RPC network to connect to your local node:
-1.  Click the network selection dropdown and choose **Add Network** -> **Add network manually**.
-2.  Fill in the following details:
-    *   **Network Name:** Hardhat Localhost
-    *   **New RPC URL:** `http://127.0.0.1:8545`
-    *   **Chain ID:** `31337`
-    *   **Currency Symbol:** `ETH`
-3.  Click **Save** and switch to your new network.
+## Prisma Errors
 
-#### Import Test Accounts
-To simulate transactions:
-1.  Copy the **Private Key** for **Account #0** from your Hardhat terminal and import it into MetaMask (this will act as your **Buyer**).
-2.  Copy the **Private Key** for **Account #1** and import it into MetaMask (this will act as your **Seller**).
+```bash
+npx prisma generate
+npx prisma db push
+```
 
 ---
 
-### Step 6: Launch the Web App
-Run the Next.js development server:
-```bash
-npm run dev
-```
-Open **[http://localhost:3000](http://localhost:3000)** in your browser. You can now use MetaMask to connect, alternate between accounts, lock funds as a Buyer, and claim them as a Seller!
+## MetaMask Wrong Network
+
+Ensure:
+- Chain ID = `31337`
+- RPC URL = `http://127.0.0.1:8545`
 
 ---
 
-## 🧪 Running Tests
-To run the automated Solidity unit tests, execute the following command:
-```bash
-npx hardhat test
-```
-This runs the full test suite in `test/FreelanceEscrow.js` covering creation, funding state transitions, work submissions, successful release paths, and dispute scenarios.
+# 🛠️ Technologies Used
+
+- Next.js 14
+- TypeScript
+- Solidity
+- Hardhat
+- Prisma
+- SQLite
+- Tailwind CSS
+- Wagmi
+- Viem
+- MetaMask
+- Ethereum
