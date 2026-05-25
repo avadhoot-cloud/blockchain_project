@@ -4,6 +4,7 @@ import { WagmiProvider, createConfig, http } from "wagmi";
 import { hardhat } from "wagmi/chains";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ReactNode } from "react";
+import { AuthProvider } from "@/hooks/useAuth";
 
 const config = createConfig({
   chains: [hardhat],
@@ -18,7 +19,9 @@ export function Providers({ children }: { children: ReactNode }) {
   return (
     <WagmiProvider config={config}>
       <QueryClientProvider client={queryClient}>
-        {children}
+        <AuthProvider>
+          {children}
+        </AuthProvider>
       </QueryClientProvider>
     </WagmiProvider>
   );

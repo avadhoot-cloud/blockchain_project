@@ -5,14 +5,22 @@ import { useAccount, useWriteContract, useWaitForTransactionReceipt } from "wagm
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { WalletConnect } from "@/components/WalletConnect";
+import { Logo } from "@/components/Logo";
+import { HistoryTable } from "@/components/HistoryTable";
+import { useAuth } from "@/hooks/useAuth";
 import contractData from "@/lib/contractData.json";
 import { Project } from "@prisma/client";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
+import { FileCheck, Sparkles, Loader2, LogOut, AlertTriangle } from "lucide-react";
+import { BalanceBadge } from "@/components/BalanceBadge";
+
 
 export default function SellerDashboard() {
   const { isConnected, address } = useAccount();
+  const { user, logout, loading: authLoading } = useAuth();
   const router = useRouter();
+
   const [projects, setProjects] = useState<Project[]>([]);
   const [evidenceUrl, setEvidenceUrl] = useState("");
   const [selectedProjectId, setSelectedProjectId] = useState<number | null>(null);
@@ -20,13 +28,21 @@ export default function SellerDashboard() {
   const { data: hash, isPending, writeContract, error: writeError } = useWriteContract();
   const { isLoading: isConfirming, isSuccess: isConfirmed, error: confirmError } = useWaitForTransactionReceipt({ hash });
 
-  // Load projects from database
+  // 1. Guard route - redirect to /auth if session missing
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.push("/auth");
+    }
+  }, [user, authLoading, router]);
+
+  // 2. Fetch projects assigned to seller
   const loadProjects = () => {
     if (address) {
       fetch("/api/projects")
         .then(res => res.json())
         .then((data: Project[]) => {
-          setProjects(data.filter(p => p.sellerAddress?.toLowerCase() === address.toLowerCase()));
+          // Only show active on-chain projects assigned to this seller
+          setProjects(data.filter(p => p.sellerAddress?.toLowerCase() === address.toLowerCase() && p.status !== "CREATED"));
         })
         .catch((err) => {
           console.error("Failed to load projects:", err);
@@ -35,35 +51,52 @@ export default function SellerDashboard() {
   };
 
   useEffect(() => {
-    loadProjects();
-  }, [address]);
+    if (user && address) {
+      loadProjects();
+    }
+  }, [user, address]);
 
-  // Handle transaction feedback and notifications
+  // 3. Handle transaction notifications
   useEffect(() => {
     if (isPending) {
-      toast.loading("Awaiting wallet confirmation...", { id: "tx-status" });
+      toast.loading("Awaiting wallet signature confirmation...", { id: "tx-status" });
     }
   }, [isPending]);
 
   useEffect(() => {
     if (hash) {
-      toast.loading("Transaction submitted! Mining block...", { id: "tx-status" });
+      toast.loading("Transaction submitted! Mining block on local node...", { id: "tx-status" });
     }
   }, [hash]);
 
   useEffect(() => {
     if (isConfirmed) {
       toast.success("Work evidence successfully recorded on the blockchain!", { id: "tx-status", duration: 5000 });
-      setEvidenceUrl("");
-      setSelectedProjectId(null);
-      loadProjects(); // Reload projects list
-
-      const timer = setTimeout(() => {
-        router.push("/");
-      }, 2500);
-      return () => clearTimeout(timer);
+      
+      // Update status to IN_REVIEW in the DB
+      if (selectedProjectId) {
+        fetch("/api/projects", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ 
+            id: selectedProjectId, 
+            status: "IN_REVIEW",
+            githubUrl: evidenceUrl
+          })
+        }).then(() => {
+          setEvidenceUrl("");
+          setSelectedProjectId(null);
+          loadProjects(); // Reload projects list
+          // Force a soft page refresh to update history table
+          window.location.reload();
+        }).catch((err) => console.error("Failed to update project status in DB:", err));
+      } else {
+        setEvidenceUrl("");
+        setSelectedProjectId(null);
+        loadProjects(); // Reload projects list
+      }
     }
-  }, [isConfirmed, router]);
+  }, [isConfirmed, selectedProjectId]);
 
   useEffect(() => {
     const err = writeError || confirmError;
@@ -80,14 +113,14 @@ export default function SellerDashboard() {
     }
     
     try {
-      toast.loading("Initiating contract execution...", { id: "tx-status" });
+      toast.loading("Initiating contract evidence submission...", { id: "tx-status" });
       setSelectedProjectId(projectId);
 
       writeContract({
         address: contractData.address as `0x${string}`,
         abi: contractData.abi,
         functionName: "submitWork",
-        args: [projectId, evidenceUrl],
+        args: [BigInt(projectId), evidenceUrl],
       });
     } catch (err: any) {
       console.error(err);
@@ -95,71 +128,145 @@ export default function SellerDashboard() {
     }
   };
 
-  return (
-    <div className="container mx-auto p-8 max-w-4xl">
-      <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold">Seller Dashboard</h1>
-        <WalletConnect />
+  if (authLoading || !user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
       </div>
+    );
+  }
 
-      {!isConnected ? (
-        <div className="text-center p-12 border rounded-xl bg-surface-2 text-muted-foreground">
-          Please connect your wallet to view assigned projects.
-        </div>
-      ) : (
-        <div className="space-y-6">
-          <h2 className="text-xl font-semibold">Your Assigned Projects</h2>
+  return (
+    <div className="min-h-screen bg-background text-foreground flex flex-col">
+      {/* Premium Branded Header */}
+      <header className="border-b bg-card/50 backdrop-blur-md sticky top-0 z-40">
+        <div className="container mx-auto px-6 py-4 flex justify-between items-center">
+          <Logo showText={true} />
           
-          {projects.length === 0 ? (
-            <div className="p-8 border rounded-xl text-center text-muted-foreground">
-              No projects assigned to your wallet address.
+          <div className="flex items-center gap-4">
+            {/* User Session Info */}
+            <div className="flex items-center gap-2 border bg-surface-2 px-3 py-1.5 rounded-xl text-xs font-semibold">
+              <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+              <span>Seller:</span>
+              <span className="text-muted-foreground font-bold">{user.username}</span>
             </div>
-          ) : (
-            <div className="grid gap-6">
-              {projects.map(p => (
-                <div key={p.id} className="border p-6 rounded-xl bg-card">
-                  <div className="flex justify-between items-start mb-4">
-                    <div>
-                      <h3 className="text-lg font-bold">{p.title}</h3>
-                      <p className="text-sm text-muted-foreground mt-1">{p.description}</p>
-                    </div>
-                    <div className="text-right">
-                      <div className="font-mono font-bold">{p.budget} ETH</div>
-                      <div className="text-xs text-muted-foreground mt-1">Status: {p.status}</div>
-                    </div>
-                  </div>
-
-                  <div className="pt-4 border-t mt-4">
-                    <label className="text-sm font-medium block mb-2">Submit Work Evidence (URL or IPFS Hash)</label>
-                    <div className="flex gap-4">
-                      <Input 
-                        placeholder="https://github.com/..." 
-                        value={selectedProjectId === p.id ? evidenceUrl : ""} 
-                        onChange={e => {
-                          setSelectedProjectId(p.id);
-                          setEvidenceUrl(e.target.value);
-                        }} 
-                      />
-                      <Button 
-                        disabled={selectedProjectId !== p.id || isPending || isConfirming || !evidenceUrl}
-                        onClick={() => handleSubmitWork(p.id)}
-                      >
-                        {selectedProjectId === p.id && isPending ? "Confirming..." : "Submit to Blockchain"}
-                      </Button>
-                    </div>
-                  </div>
-                  
-                  {selectedProjectId === p.id && isConfirmed && (
-                    <div className="p-3 bg-green-500/10 text-green-500 rounded-md text-sm mt-4">
-                      Work submitted on-chain! Tx: {hash}
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
+            
+            <BalanceBadge />
+            
+            <WalletConnect />
+            
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={logout}
+              className="text-status-rejected hover:text-status-rejected/80 hover:bg-status-rejected/10 gap-1.5 text-xs font-semibold"
+            >
+              <LogOut className="w-4 h-4" />
+              Logout
+            </Button>
+          </div>
         </div>
-      )}
+      </header>
+
+      {/* Main Grid Content */}
+      <main className="container mx-auto p-6 md:p-8 max-w-6xl grid grid-cols-1 lg:grid-cols-12 gap-8 flex-1">
+        {/* Active Deliverables (Left) */}
+        <div className="lg:col-span-5 space-y-6">
+          <div className="border p-6 rounded-2xl bg-card relative overflow-hidden space-y-6">
+            <div className="absolute top-0 right-0 w-24 h-24 bg-primary/5 rounded-full blur-2xl -z-10" />
+            
+            <div className="space-y-1">
+              <h2 className="text-xl font-black flex items-center gap-2">
+                <FileCheck className="w-5 h-5 text-primary" />
+                Submit Deliverables
+              </h2>
+              <p className="text-xs text-muted-foreground">
+                Provide proof of completed work to buyer. Deliverables will be permanently anchored to the escrow smart contract.
+              </p>
+            </div>
+
+            {projects.length === 0 ? (
+              <div className="p-8 border rounded-xl text-center text-muted-foreground text-xs italic bg-surface-2/30">
+                No active escrow projects currently assigned to your connected wallet.
+              </div>
+            ) : (
+              <div className="space-y-6">
+                {projects.map(p => (
+                  <div key={p.id} className="border p-4 rounded-xl bg-surface-2/40 space-y-4">
+                    <div className="flex justify-between items-start gap-4">
+                      <div>
+                        <h3 className="text-sm font-bold text-foreground">{p.title}</h3>
+                        <p className="text-xs text-muted-foreground line-clamp-2 mt-1">{p.description}</p>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <div className="font-mono text-xs font-bold text-primary">{p.budget} ETH</div>
+                        <div className="text-[10px] uppercase text-muted-foreground tracking-wider mt-1">{p.status}</div>
+                      </div>
+                    </div>
+
+                    {/* Render Rejection Feedback and Strikes */}
+                    {(p as any).rejectionCount > 0 && (
+                      <div className="p-3 rounded-lg border border-status-rejected/20 bg-status-rejected/5 space-y-1.5 text-xs">
+                        <div className="flex justify-between items-center text-status-rejected font-semibold">
+                          <span className="flex items-center gap-1">
+                            <AlertTriangle className="w-3.5 h-3.5" />
+                            <span>Work Rejected (Strike {(p as any).rejectionCount}/3)</span>
+                          </span>
+                          {(p as any).rejectionCount >= 4 && (
+                            <span className="bg-red-500 text-white font-sans text-[10px] font-bold px-1.5 py-0.5 rounded uppercase animate-pulse">
+                              Disputed
+                            </span>
+                          )}
+                        </div>
+                        {(p as any).rejectionFeedback && (
+                          <div className="text-muted-foreground font-mono text-[11px] leading-relaxed">
+                            <span className="font-bold text-foreground">Buyer Feedback:</span> "{(p as any).rejectionFeedback}"
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    <div className="pt-3 border-t space-y-2">
+                      <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">
+                        Work Evidence (GitHub Repo or IPFS Hash)
+                      </label>
+                      <div className="flex gap-2">
+                        <Input 
+                          placeholder="https://github.com/username/project" 
+                          value={selectedProjectId === p.id ? evidenceUrl : ""} 
+                          onChange={e => {
+                            setSelectedProjectId(p.id);
+                            setEvidenceUrl(e.target.value);
+                          }} 
+                          className="bg-background border-border text-xs focus-visible:ring-primary"
+                        />
+                        <Button 
+                          disabled={selectedProjectId !== p.id || isPending || isConfirming || !evidenceUrl}
+                          onClick={() => handleSubmitWork(p.id)}
+                          size="sm"
+                          className="text-xs font-bold shrink-0"
+                        >
+                          {selectedProjectId === p.id && isPending ? (
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          ) : (
+                            <Sparkles className="w-3.5 h-3.5 mr-1" />
+                          )}
+                          Submit
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Real-time Reconciled History Panel (Right) */}
+        <div className="lg:col-span-7 space-y-6">
+          <HistoryTable />
+        </div>
+      </main>
     </div>
   );
 }

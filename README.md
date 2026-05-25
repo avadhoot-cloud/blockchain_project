@@ -1,371 +1,155 @@
-# Ocean Ledger: Blockchain-Powered Freelance Escrow & Mandate System
+# SafeEscrow: Blockchain-Powered Freelance Escrow & Identity Ecosystem
 
-Ocean Ledger is a decentralized freelancing and escrow platform built to bring trust, transparent workflows, and dispute protection to Buyers and Sellers. Built using Ethereum smart contracts, Hardhat, Prisma, and Next.js 14, the platform ensures freelance agreements are governed by transparent, self-executing blockchain logic.
+SafeEscrow is a decentralized freelance agreement and secure escrow platform built to ensure transparent contract execution, cryptographic identity bindings, role guards, and real-time blockchain status tracking. 
 
----
-
-## 🌟 Key Features
-
-### 🛡️ Smart Contract Escrow Lock
-All financial agreements are managed directly on-chain by `FreelanceEscrow.sol`. Funds remain locked securely in escrow and are only released upon project completion or dispute resolution.
-
-### 💼 Dual-Role Dashboards
-
-#### Buyer Dashboard (`/buyer`)
-- Create project mandates
-- Assign sellers
-- Deposit ETH into escrow
-- Review and approve deliverables
-
-#### Seller Dashboard (`/seller`)
-- Connect MetaMask wallet
-- View assigned projects
-- Submit work proof (GitHub/IPFS links)
-
-### ⛓️ Real-Time Blockchain Transparency
-- Live Hardhat blockchain monitoring
-- Real-time block confirmations
-- Wallet-connected frontend using Wagmi & Viem
-
-### 🗃️ Hybrid Architecture
-#### On-Chain
-- Escrow handling
-- ETH transfers
-- State transitions
-- Dispute tracking
-
-#### Off-Chain
-- Project metadata storage
-- Fast indexing using Prisma + SQLite
-- Faster frontend rendering
+By combining secure on-chain escrow operations via Ethereum smart contracts with robust local databases and JWT-based session security, SafeEscrow makes trustless freelance transactions completely seamless and bulletproof.
 
 ---
 
-# 🏗️ Project Structure
+## 🔒 Security & Architectural Blueprint
+
+The application implements a zero-trust model between the client, server database, and blockchain:
+
+```mermaid
+graph TD
+    Client[MetaMask Connected Client] -->|Validate Session / JWT| NextJS[Next.js Server Actions / Middleware]
+    NextJS -->|Zod Scheme & bcryptjs| SQLite[(Prisma SQLite Database)]
+    Client -->|On-Chain Read/Write Transactions| Blockchain[(Hardhat Local Blockchain)]
+    NextJS -.->|Read Transaction Events / Logs| Blockchain
+```
+
+### 1. Cryptographic Password Security
+We employ `bcryptjs` to securely hash user passwords off-chain before writing to the database:
+- **Hashed Storage**: Passwords are never stored in plain-text. They are hashed using a robust cost-factor work parameter of `10` rounds.
+- **Timing Attacks Protection**: Standard secure comparison guards protect login matching against timing-based enumeration vectors.
+
+### 2. Edge-Safe JWT Sessions (jose)
+Instead of plain client-side authentication states:
+- **Secure Token**: Authentic logins issue a custom JSON Web Token (JWT) signed with a secure server-only environmental secret key.
+- **HttpOnly Cookies**: The session token is transmitted and stored within an `HttpOnly`, `Secure` (in production), `SameSite=Strict` cookie. This makes the session completely immune to Cross-Site Scripting (XSS) token theft.
+- **Edge Middleware**: Next.js Edge Middleware intercepts any request to `/buyer` or `/seller` on-the-fly, decrypting the JWT cookie and performing immediate role authorization checks.
+
+### 3. Live Wallet Alignment Overlay (MetaMask Listeners)
+To guarantee session integrity:
+- **Wallet Binding**: A user's account registration binds their username permanently to a specific public Ethereum wallet address.
+- **Live Mismatch Guards**: The client-side React Auth Context subscribes to active MetaMask events (`accountsChanged`, `chainChanged`). If a user switches accounts in MetaMask, the UI triggers a secure overlay block, prompting them to switch back or connect the correct wallet.
+
+### 4. Blockchain as the Single Source of Truth
+We separate caching concerns from our source of truth:
+- **SQLite Role**: Acts as an ultra-fast indexing and UI cache for user profiles, off-chain project parameters (titles, descriptions, timestamps), and usernames.
+- **Smart Contract Role**: Acts as the ultimate authority for financial, state, and settlement tracking. Live contract reads (`projects(projectId)`) override SQLite status cache fields in real-time. Undeployed or rejected projects are automatically excluded from lists and purged from search pools.
+
+### 5. API Input Sanitization Layer (Zod)
+All off-chain endpoints (`POST /api/auth/register`, `POST /api/auth/login`, `POST /api/projects`) filter incoming bodies against strict `zod` schemas:
+- **Regex Format Enforcements**: Alphanumeric username restrictions, minimum password lengths, and standardized Ethereum address checksum formatting.
+
+---
+
+## 🏗️ Project Structure
 
 ```text
 ocean-ledger/
 ├── contracts/
-│   └── FreelanceEscrow.sol
-
+│   └── FreelanceEscrow.sol          # Escrow locks, Anti-stall timeouts, and Dispute code
 ├── scripts/
-│   └── deploy.js
-
+│   └── deploy.js                    # Automated compilation and deployment script
 ├── test/
-│   └── FreelanceEscrow.js
-
+│   └── FreelanceEscrow.js           # Smart contract suite verifying state transitions
 ├── prisma/
-│   ├── schema.prisma
-│   └── dev.db
-
+│   ├── schema.prisma                # Database model declarations (Users, Projects, txHash)
+│   └── dev.db                       # Local SQLite Database
 ├── src/
 │   ├── app/
-│   │   ├── api/projects/
-│   │   ├── buyer/
-│   │   ├── seller/
-│   │   ├── globals.css
-│   │   ├── layout.tsx
-│   │   └── page.tsx
-│   │
+│   │   ├── api/                     # APIs (auth/register, auth/login, users, projects)
+│   │   ├── auth/                    # Tabbed Login / Register page with Web3 vinculation
+│   │   ├── buyer/                   # Employer dashboard with searchable seller combobox
+│   │   ├── seller/                  # Freelancer dashboard with deliverable submission form
+│   │   ├── globals.css              # Custom styling definitions
+│   │   ├── layout.tsx               # Root App layout and Providers initialization
+│   │   └── page.tsx                 # Home landing page with dynamic profile greetings
 │   ├── components/
-│   │   ├── ui/
-│   │   ├── Providers.tsx
-│   │   ├── WalletConnect.tsx
-│   │   └── TransparencyPanel.tsx
-│   │
+│   │   ├── Logo.tsx                 # Branded SafeEscrow lock vector
+│   │   ├── WalletConnect.tsx        # Injected Web3 connection buttons
+│   │   ├── HistoryTable.tsx         # Reconciled tabular ledger querying Hardhat real-time
+│   │   └── TransparencyPanel.tsx    # Live block and event tracking overlay
+│   ├── hooks/
+│   │   └── useAuth.tsx              # Auth Context managing sessions & MetaMask listeners
 │   └── lib/
-│       ├── utils.ts
-│       └── contractData.json
-
-├── hardhat.config.ts
-├── tailwind.config.ts
-├── tsconfig.json
-└── package.json
+│       ├── jwt.ts                   # Token encryption and decryption helper
+│       └── contractData.json        # Compiled ABI definitions and contract address
+├── hardhat.config.ts                # Local Hardhat compilation and network config
+├── package.json                     # Package dependencies (bcryptjs, jose, zod, wagmi)
+└── README.md                        # Documentation
 ```
 
 ---
 
-# 🏁 How the Project Works
+## 🚀 Local Runbook & Startup Guide
 
-```mermaid
-sequenceDiagram
-    autonumber
+Follow this startup sequence to run and compile SafeEscrow locally:
 
-    actor Buyer
-    participant EscrowContract as On-Chain Escrow
-    participant DB as SQLite Database
-    actor Seller
+### 1. Install Required Software
+Make sure you have installed:
+- **Node.js** (v18 or newer)
+- **MetaMask** browser extension
 
-    Buyer->>DB: Create Project Mandate & Assign Seller
-    Buyer->>EscrowContract: Deposit ETH into Escrow
-    Note over EscrowContract: State changes to Active
+### 2. Startup Sequence
+Always run and initialize the components in the following order:
 
-    Seller->>DB: View Assigned Project
-    Seller->>EscrowContract: Submit Deliverables (GitHub/IPFS)
-    Note over EscrowContract: State changes to InReview
-
-    alt Buyer Approves Work
-        Buyer->>EscrowContract: Release Escrow
-        EscrowContract->>Seller: Transfer ETH to Seller
-        Note over EscrowContract: State changes to Completed
-
-    else Buyer Rejects or Disputes Work
-        Buyer->>EscrowContract: Raise Dispute / Refund Request
-        Note over EscrowContract: State changes to Disputed
-        Note over EscrowContract: Admin Resolves Dispute
-    end
-```
-
----
-
-# 🚀 Setup & Execution Guide
-
-## 1. Install Required Software
-
-Install:
-
-- Node.js (v18 or newer)
-- MetaMask browser extension
-
----
-
-## 2. Open the Project Folder
-
-```bash
-cd ocean-ledger
-```
-
----
-
-## 3. Install Dependencies
-
+#### Step 1: Install Node Dependencies
 ```bash
 npm install
 ```
+*Installs Next.js, Hardhat, Prisma, bcryptjs, jose, zod, and web3 library dependencies.*
 
-This installs:
-
-- Next.js
-- Hardhat
-- Prisma
-- Wagmi
-- Tailwind CSS
-- Solidity dependencies
-- Other required packages
-
----
-
-## 4. Setup Prisma SQLite Database
-
+#### Step 2: Initialize SQLite Database Schema
 ```bash
 npx prisma db push
 ```
+*Generates the local SQLite database file (`prisma/dev.db`), compiles models, and provisions Prisma Client.*
 
-This:
-
-- creates the SQLite database
-- syncs Prisma schema
-- generates Prisma client
-
----
-
-## 5. Start Hardhat Blockchain
-
-Open a NEW terminal and run:
-
+#### Step 3: Launch Local Hardhat Blockchain
+Open a **new, dedicated terminal** and spin up your local Ethereum emulator:
 ```bash
 npx hardhat node
 ```
+*This starts a local JSON-RPC server at `http://127.0.0.1:8545` and exports 20 pre-funded test accounts with their private keys. Keep this terminal running.*
 
-You will see:
-
-- Local blockchain running at:
-  `http://127.0.0.1:8545`
-- 20 test Ethereum accounts
-- Their private keys
-
-⚠️ Keep this terminal OPEN.
-
----
-
-## 6. Deploy Smart Contract
-
-Open another terminal and run:
-
+#### Step 4: Deploy Escrow Smart Contract
+Open a **separate terminal** and deploy your escrow logic:
 ```bash
 npx hardhat run scripts/deploy.js --network localhost
 ```
+*Compiles FreelanceEscrow.sol, deploys it to block #1, and generates ABI references in `src/lib/contractData.json`.*
 
-This:
-
-- compiles the Solidity contract
-- deploys the escrow smart contract
-- generates:
-  `src/lib/contractData.json`
-
----
-
-## 7. Configure MetaMask
-
-Open MetaMask.
-
-### Add Hardhat Local Network
-
-| Field | Value |
-|---|---|
-| Network Name | Hardhat Localhost |
-| RPC URL | http://127.0.0.1:8545 |
-| Chain ID | 31337 |
-| Currency Symbol | ETH |
-
-Save the network.
-
----
-
-## 8. Import Test Accounts
-
-From the Hardhat terminal:
-
-### Import:
-- Account #0 → Buyer
-- Account #1 → Seller
-
-Use:
-- MetaMask → Account → Import Account
-
-Paste the private keys shown in the Hardhat terminal.
-
----
-
-## 9. Start Frontend
-
-Open another terminal:
-
+#### Step 5: Start the Development Server
 ```bash
 npm run dev
 ```
-
-Open:
-
-```text
-http://localhost:3000
-```
+*Launches the Next.js Turbo server. Navigate to `http://localhost:3000` to access the platform.*
 
 ---
 
-# 💻 Using the Application
+## 🦊 Web3 Wallet Setup
 
-## Buyer Side
-- Connect MetaMask wallet
-- Create project mandate
-- Deposit ETH into escrow
-- Review seller submissions
-- Approve or dispute work
+1. **MetaMask Local Network**:
+   Add a custom network in MetaMask using these credentials:
+   - Network Name: `Hardhat Localhost`
+   - RPC URL: `http://127.0.0.1:8545`
+   - Chain ID: `31337`
+   - Currency Symbol: `ETH`
 
-## Seller Side
-- Connect seller wallet
-- View assigned projects
-- Submit deliverables
-- Receive escrow payment
-
----
-
-# ⚖️ Escrow Workflow
-
-- Buyer deposits ETH into escrow
-- Seller submits deliverables
-- Buyer approves:
-  - ETH released automatically
-- Buyer disputes:
-  - Contract enters dispute state
+2. **Import Test Accounts**:
+   From your active Hardhat node terminal, copy the private keys:
+   - **Account #0** (Buyer role)
+   - **Account #1** (Seller role)
+   Import them into MetaMask via **Import Account** using their private keys.
 
 ---
 
-# 🧪 Run Smart Contract Tests
+## 💻 Verification & Tests
 
+To execute the smart contract test suite validating state lock and anti-stall timings:
 ```bash
 npx hardhat test
 ```
-
----
-
-# 📌 Recommended Terminal Setup
-
-## Terminal 1
-```bash
-npx hardhat node
-```
-
-## Terminal 2
-```bash
-npx hardhat run scripts/deploy.js --network localhost
-```
-
-## Terminal 3
-```bash
-npm run dev
-```
-
----
-
-# 🔄 Full Startup Order
-
-Always run in this order:
-
-```text
-1. npm install
-2. npx prisma db push
-3. npx hardhat node
-4. npx hardhat run scripts/deploy.js --network localhost
-5. npm run dev
-```
-
----
-
-# ❗ Common Errors & Fixes
-
-## “Port 8545 already in use”
-Close old Hardhat terminals/processes.
-
----
-
-## “contractData.json missing”
-
-Run deployment again:
-
-```bash
-npx hardhat run scripts/deploy.js --network localhost
-```
-
----
-
-## Prisma Errors
-
-```bash
-npx prisma generate
-npx prisma db push
-```
-
----
-
-## MetaMask Wrong Network
-
-Ensure:
-- Chain ID = `31337`
-- RPC URL = `http://127.0.0.1:8545`
-
----
-
-# 🛠️ Technologies Used
-
-- Next.js 14
-- TypeScript
-- Solidity
-- Hardhat
-- Prisma
-- SQLite
-- Tailwind CSS
-- Wagmi
-- Viem
-- MetaMask
-- Ethereum
