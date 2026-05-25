@@ -1,0 +1,330 @@
+{
+  "address": "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+  "abi": [
+    {
+      "type": "constructor",
+      "stateMutability": "undefined",
+      "payable": false,
+      "inputs": []
+    },
+    {
+      "type": "error",
+      "name": "ReentrancyGuardReentrantCall",
+      "inputs": []
+    },
+    {
+      "type": "event",
+      "anonymous": false,
+      "name": "DisputeRaised",
+      "inputs": [
+        {
+          "type": "uint256",
+          "name": "projectId",
+          "indexed": true
+        },
+        {
+          "type": "address",
+          "name": "raisedBy",
+          "indexed": true
+        }
+      ]
+    },
+    {
+      "type": "event",
+      "anonymous": false,
+      "name": "DisputeResolved",
+      "inputs": [
+        {
+          "type": "uint256",
+          "name": "projectId",
+          "indexed": true
+        },
+        {
+          "type": "address",
+          "name": "winner",
+          "indexed": true
+        }
+      ]
+    },
+    {
+      "type": "event",
+      "anonymous": false,
+      "name": "EscrowFunded",
+      "inputs": [
+        {
+          "type": "uint256",
+          "name": "projectId",
+          "indexed": true
+        }
+      ]
+    },
+    {
+      "type": "event",
+      "anonymous": false,
+      "name": "ProjectApproved",
+      "inputs": [
+        {
+          "type": "uint256",
+          "name": "projectId",
+          "indexed": true
+        }
+      ]
+    },
+    {
+      "type": "event",
+      "anonymous": false,
+      "name": "ProjectCreated",
+      "inputs": [
+        {
+          "type": "uint256",
+          "name": "projectId",
+          "indexed": true
+        },
+        {
+          "type": "address",
+          "name": "buyer",
+          "indexed": true
+        },
+        {
+          "type": "uint256",
+          "name": "budget",
+          "indexed": false
+        },
+        {
+          "type": "string",
+          "name": "projectHash",
+          "indexed": false
+        }
+      ]
+    },
+    {
+      "type": "event",
+      "anonymous": false,
+      "name": "SellerAssigned",
+      "inputs": [
+        {
+          "type": "uint256",
+          "name": "projectId",
+          "indexed": true
+        },
+        {
+          "type": "address",
+          "name": "seller",
+          "indexed": true
+        }
+      ]
+    },
+    {
+      "type": "event",
+      "anonymous": false,
+      "name": "WorkSubmitted",
+      "inputs": [
+        {
+          "type": "uint256",
+          "name": "projectId",
+          "indexed": true
+        },
+        {
+          "type": "string",
+          "name": "evidenceHash",
+          "indexed": false
+        }
+      ]
+    },
+    {
+      "type": "function",
+      "name": "ANTI_STALL_TIMEOUT",
+      "constant": true,
+      "stateMutability": "view",
+      "payable": false,
+      "inputs": [],
+      "outputs": [
+        {
+          "type": "uint256",
+          "name": ""
+        }
+      ]
+    },
+    {
+      "type": "function",
+      "name": "admin",
+      "constant": true,
+      "stateMutability": "view",
+      "payable": false,
+      "inputs": [],
+      "outputs": [
+        {
+          "type": "address",
+          "name": ""
+        }
+      ]
+    },
+    {
+      "type": "function",
+      "name": "approveWork",
+      "constant": false,
+      "payable": false,
+      "inputs": [
+        {
+          "type": "uint256",
+          "name": "_projectId"
+        }
+      ],
+      "outputs": []
+    },
+    {
+      "type": "function",
+      "name": "createProject",
+      "constant": false,
+      "stateMutability": "payable",
+      "payable": true,
+      "inputs": [
+        {
+          "type": "string",
+          "name": "_projectHash"
+        },
+        {
+          "type": "address",
+          "name": "_seller"
+        }
+      ],
+      "outputs": []
+    },
+    {
+      "type": "function",
+      "name": "projectCount",
+      "constant": true,
+      "stateMutability": "view",
+      "payable": false,
+      "inputs": [],
+      "outputs": [
+        {
+          "type": "uint256",
+          "name": ""
+        }
+      ]
+    },
+    {
+      "type": "function",
+      "name": "projects",
+      "constant": true,
+      "stateMutability": "view",
+      "payable": false,
+      "inputs": [
+        {
+          "type": "uint256",
+          "name": ""
+        }
+      ],
+      "outputs": [
+        {
+          "type": "uint256",
+          "name": "id"
+        },
+        {
+          "type": "address",
+          "name": "buyer"
+        },
+        {
+          "type": "address",
+          "name": "seller"
+        },
+        {
+          "type": "uint256",
+          "name": "budget"
+        },
+        {
+          "type": "uint8",
+          "name": "state"
+        },
+        {
+          "type": "string",
+          "name": "projectHash"
+        },
+        {
+          "type": "string",
+          "name": "evidenceHash"
+        }
+      ]
+    },
+    {
+      "type": "function",
+      "name": "raiseDispute",
+      "constant": false,
+      "payable": false,
+      "inputs": [
+        {
+          "type": "uint256",
+          "name": "_projectId"
+        }
+      ],
+      "outputs": []
+    },
+    {
+      "type": "function",
+      "name": "resolveDispute",
+      "constant": false,
+      "payable": false,
+      "inputs": [
+        {
+          "type": "uint256",
+          "name": "_projectId"
+        },
+        {
+          "type": "bool",
+          "name": "_sellerWins"
+        }
+      ],
+      "outputs": []
+    },
+    {
+      "type": "function",
+      "name": "submissionTimestamps",
+      "constant": true,
+      "stateMutability": "view",
+      "payable": false,
+      "inputs": [
+        {
+          "type": "uint256",
+          "name": ""
+        }
+      ],
+      "outputs": [
+        {
+          "type": "uint256",
+          "name": ""
+        }
+      ]
+    },
+    {
+      "type": "function",
+      "name": "submitWork",
+      "constant": false,
+      "payable": false,
+      "inputs": [
+        {
+          "type": "uint256",
+          "name": "_projectId"
+        },
+        {
+          "type": "string",
+          "name": "_evidenceHash"
+        }
+      ],
+      "outputs": []
+    },
+    {
+      "type": "function",
+      "name": "triggerAntiStall",
+      "constant": false,
+      "payable": false,
+      "inputs": [
+        {
+          "type": "uint256",
+          "name": "_projectId"
+        }
+      ],
+      "outputs": []
+    }
+  ]
+}
